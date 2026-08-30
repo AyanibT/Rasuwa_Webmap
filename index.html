@@ -246,6 +246,10 @@
   map.createPane('rasterPane');
   map.getPane('rasterPane').style.zIndex = 250;
 
+  // Create dedicated pane for lakes (above other vectors)
+  map.createPane('lakePane');
+  map.getPane('lakePane').style.zIndex = 450;   // higher than default overlay pane (400)
+
   // Vector Toggle
   function toggleVectorLayer(key) {
     var layer = layers[key];
@@ -283,57 +287,64 @@
     }
   }
 
-  // 5. Load GeoJSON (with tooltip binding for non‑dynamic layers)
-  function loadGeoJSON(url, style, layerKey, labelClass) {
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        var geoLayer = L.geoJSON(data, {
-          style: style,
-          onEachFeature: function (feature, featureLayer) {
-            if (feature.properties) {
-              var popupContent = '<div style="max-height: 200px; overflow-y: auto;">';
-              popupContent += '<strong style="font-size: 13px; border-bottom: 2px solid #333; display: block; padding-bottom: 3px; margin-bottom: 5px;">Attributes</strong>';
-              popupContent += '<table style="width: 100%; border-collapse: collapse; font-size: 12px;">';
-              for (var key in feature.properties) {
-                popupContent += `<tr>
-                  <td style="font-weight: bold; padding: 2px 6px 2px 0; border-bottom: 1px solid #eee; text-transform: capitalize;">${key}:</td>
-                  <td style="padding: 2px 0; border-bottom: 1px solid #eee;">${feature.properties[key]}</td>
-                </tr>`;
-              }
-              popupContent += '</table></div>';
-              featureLayer.bindPopup(popupContent);
+  // 5. Load GeoJSON (with tooltip binding for non‑dynamic layers, optional custom pane)
+function loadGeoJSON(url, style, layerKey, labelClass, paneName) {
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      var options = {
+        style: style,
+        onEachFeature: function (feature, featureLayer) {
+          if (feature.properties) {
+            var popupContent = '<div style="max-height: 200px; overflow-y: auto;">';
+            popupContent += '<strong style="font-size: 13px; border-bottom: 2px solid #333; display: block; padding-bottom: 3px; margin-bottom: 5px;">Attributes</strong>';
+            popupContent += '<table style="width: 100%; border-collapse: collapse; font-size: 12px;">';
+            for (var key in feature.properties) {
+              popupContent += `<tr>
+                <td style="font-weight: bold; padding: 2px 6px 2px 0; border-bottom: 1px solid #eee; text-transform: capitalize;">${key}:</td>
+                <td style="padding: 2px 0; border-bottom: 1px solid #eee;">${feature.properties[key]}</td>
+              </tr>`;
+            }
+            popupContent += '</table></div>';
+            featureLayer.bindPopup(popupContent);
 
-              // Bind tooltip only for layers that are NOT flood/buffer (they have dynamic labels)
-              if (layerKey !== 'floodPolygon' && layerKey !== 'floodBuffer' && labelClass) {
-                var nameValue = feature.properties.Name || feature.properties.name || feature.properties.NAME;
-                if (nameValue) {
-                  featureLayer.bindTooltip(String(nameValue), {
-                    permanent: true,
-                    direction: 'center',
-                    className: 'label-qgis ' + labelClass
-                  });
-                }
+            // Bind tooltip only for layers that are NOT flood/buffer (they have dynamic labels)
+            if (layerKey !== 'floodPolygon' && layerKey !== 'floodBuffer' && labelClass) {
+              var nameValue = feature.properties.Name || feature.properties.name || feature.properties.NAME;
+              if (nameValue) {
+                featureLayer.bindTooltip(String(nameValue), {
+                  permanent: true,
+                  direction: 'center',
+                  className: 'label-qgis ' + labelClass
+                });
               }
             }
           }
-        });
-
-        layers[layerKey] = geoLayer;
-        geoLayer.addTo(map);
-        injectSVGPatterns();
-
-        // Handle dynamic labels for flood and buffer (single feature each)
-        if (layerKey === 'floodPolygon') {
-          floodFeature = data.features[0];
-          createFloodLabel();
-        } else if (layerKey === 'floodBuffer') {
-          bufferFeature = data.features[0];
-          createBufferLabel();
         }
-      })
-      .catch(err => console.error('Error loading GeoJSON (' + layerKey + '):', err));
-  }
+      };
+
+      // Assign custom pane if provided (e.g., 'lakePane' for lakes)
+      if (paneName) {
+        options.pane = paneName;
+      }
+
+      var geoLayer = L.geoJSON(data, options);
+
+      layers[layerKey] = geoLayer;
+      geoLayer.addTo(map);
+      injectSVGPatterns();
+
+      // Handle dynamic labels for flood and buffer (single feature each)
+      if (layerKey === 'floodPolygon') {
+        floodFeature = data.features[0];
+        createFloodLabel();
+      } else if (layerKey === 'floodBuffer') {
+        bufferFeature = data.features[0];
+        createBufferLabel();
+      }
+    })
+    .catch(err => console.error('Error loading GeoJSON (' + layerKey + '):', err));
+}
 
   // Dynamic Labels for Flood & Buffer
   var floodLabel = null, bufferLabel = null;
@@ -446,8 +457,8 @@
   // 6. Load all vector layers
   loadGeoJSON('data/Flood_Polygon.geojson', styles.floodPolygon, 'floodPolygon', 'label-flood');
   loadGeoJSON('data/Flood_Buffer_30m.geojson', styles.floodBuffer, 'floodBuffer', 'label-buffer');
-  loadGeoJSON('data/Lake_1.geojson', styles.lake1, 'lake1', 'label-lake');
-  loadGeoJSON('data/Lake_2.geojson', styles.lake2, 'lake2', 'label-lake');
+  loadGeoJSON('data/Lake_1.geojson', styles.lake1, 'lake1', 'label-lake', 'lakePane');
+  loadGeoJSON('data/Lake_2.geojson', styles.lake2, 'lake2', 'label-lake', 'lakePane');
   loadGeoJSON('data/Glacier.geojson', styles.glacier, 'glacier', 'label-glacier');
   loadGeoJSON('data/Glacier_break.geojson', styles.glacierBreak, 'glacierBreak', 'label-glacier');
 
