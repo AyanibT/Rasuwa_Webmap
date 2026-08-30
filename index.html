@@ -266,7 +266,7 @@
       }
     }
   }
-  
+
 
   // Raster Switching
   var activeRasterKey = 'none';
@@ -444,12 +444,12 @@
   map.on('moveend zoomend', updateDynamicLabels);
 
   // 6. Load all vector layers
-  loadGeoJSON('data/flood_polygon.geojson', styles.floodPolygon, 'floodPolygon', 'label-flood');
-  loadGeoJSON('data/flood_buffer_30m.geojson', styles.floodBuffer, 'floodBuffer', 'label-buffer');
-  loadGeoJSON('data/lake_1.geojson', styles.lake1, 'lake1', 'label-lake');
-  loadGeoJSON('data/lake_2.geojson', styles.lake2, 'lake2', 'label-lake');
-  loadGeoJSON('data/glacier.geojson', styles.glacier, 'glacier', 'label-glacier');
-  loadGeoJSON('data/glacier_break.geojson', styles.glacierBreak, 'glacierBreak', 'label-glacier');
+  loadGeoJSON('data/Flood_Polygon.geojson', styles.floodPolygon, 'floodPolygon', 'label-flood');
+  loadGeoJSON('data/Flood_Buffer_30m.geojson', styles.floodBuffer, 'floodBuffer', 'label-buffer');
+  loadGeoJSON('data/Lake_1.geojson', styles.lake1, 'lake1', 'label-lake');
+  loadGeoJSON('data/Lake_2.geojson', styles.lake2, 'lake2', 'label-lake');
+  loadGeoJSON('data/Glacier.geojson', styles.glacier, 'glacier', 'label-glacier');
+  loadGeoJSON('data/Glacier_break.geojson', styles.glacierBreak, 'glacierBreak', 'label-glacier');
 
   // 7. Load GeoTIFFs
   function load3BandGeoTIFF(url, layerKey) {
